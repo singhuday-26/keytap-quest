@@ -84,11 +84,20 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'cursor-blink': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'cursor-blink': 'cursor-blink 1s ease-in-out infinite'
 			}
 		}
 	},
