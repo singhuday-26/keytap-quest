@@ -19,6 +19,9 @@ const CodeDisplay: React.FC<CodeDisplayProps> = ({
   
   // Split the code into characters for highlighting
   const characters = code.split("");
+  
+  // Split the code into lines for line numbers
+  const lines = code.split("\n");
 
   return (
     <Card className="w-full mb-4 border border-border bg-card">
@@ -29,34 +32,48 @@ const CodeDisplay: React.FC<CodeDisplayProps> = ({
             {snippet.difficulty}
           </Badge>
           <Badge variant="outline">{snippet.language}</Badge>
+          {snippet.category && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              {snippet.category}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent>
-        <pre className="font-mono text-left overflow-x-auto p-4 bg-muted rounded-md text-sm leading-relaxed">
-          <code>
-            {characters.map((char, index) => {
-              let className = "";
-              
-              if (index < currentIndex) {
-                className = "text-green-500 bg-green-500/10";
-              } else if (index === currentIndex) {
-                className = "bg-primary/20 relative";
-              }
-              
-              // Handle space characters
-              const displayChar = char === " " ? char : char;
-              
-              return (
-                <span key={index} className={className}>
-                  {displayChar}
-                  {index === currentIndex && (
-                    <span className="absolute bottom-0 left-0 w-0.5 h-5 bg-primary animate-cursor-blink"></span>
-                  )}
-                </span>
-              );
-            })}
-          </code>
-        </pre>
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-10 bg-muted/50 border-r text-center hidden sm:block">
+            {lines.map((_, i) => (
+              <div key={i} className="text-xs text-muted-foreground py-[0.25rem]">
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          <pre className="font-mono text-left overflow-x-auto p-4 pl-12 bg-muted rounded-md text-sm leading-relaxed">
+            <code>
+              {characters.map((char, index) => {
+                let className = "";
+                
+                if (index < currentIndex) {
+                  className = "text-green-500 bg-green-500/10";
+                } else if (index === currentIndex) {
+                  className = "bg-primary/20 relative";
+                }
+                
+                // Handle space characters
+                const displayChar = char === " " ? char : char;
+                
+                return (
+                  <span key={index} className={className}>
+                    {displayChar}
+                    {index === currentIndex && (
+                      <span className="absolute bottom-0 left-0 w-0.5 h-5 bg-primary animate-cursor-blink"></span>
+                    )}
+                  </span>
+                );
+              })}
+            </code>
+          </pre>
+        </div>
       </CardContent>
     </Card>
   );

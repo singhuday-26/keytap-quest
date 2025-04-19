@@ -12,6 +12,10 @@ export type CodeSnippet = {
   title: string;
   difficulty: 'easy' | 'medium' | 'hard';
   source?: string;
+  // Adding new fields for categorization
+  category?: 'algorithms' | 'data-structures' | 'design-patterns' | 'frameworks' | 'interview';
+  concepts?: string[];
+  author?: string;
 };
 
 export type TypingStats = {
@@ -21,6 +25,10 @@ export type TypingStats = {
   time: number;
   charactersTyped: number;
   correctCharacters: number;
+  // Adding new metrics for code-specific insights
+  specialCharCount?: number;
+  syntaxErrorCount?: number;
+  indentationErrors?: number;
 };
 
 export type TypingState = {
@@ -33,4 +41,32 @@ export type TypingState = {
   errors: number;
   correctChars: number;
   totalChars: number;
+};
+
+// New types for the enhanced features
+export type UserPreferences = {
+  theme: 'light' | 'dark' | 'system';
+  fontSize: 'small' | 'medium' | 'large';
+  keyboardSounds: boolean;
+  showLineNumbers: boolean;
+  testDuration: 15 | 30 | 60 | 120 | 300; // in seconds
+  autoComplete: boolean;
+  includeComments: boolean;
+};
+
+export type UserProgress = {
+  languages: Record<string, LanguageProgress>;
+  lastPracticed: Date;
+  streak: number;
+  totalPracticeTime: number; // in seconds
+  completedSnippets: number;
+};
+
+export type LanguageProgress = {
+  averageWpm: number;
+  averageAccuracy: number;
+  practiceCount: number;
+  lastPracticed: Date;
+  bestWpm: number;
+  commonErrors: string[];
 };
