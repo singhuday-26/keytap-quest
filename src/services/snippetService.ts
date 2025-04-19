@@ -2,8 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CodeSnippet } from "@/types";
 
-// Define a type for our database schema
-type Database = {
+// Use the existing TypeScript definition for Database from src/integrations/supabase/types.ts
+// but extend it with our custom tables to solve the TypeScript errors
+type ExtendedDatabase = {
   public: {
     Tables: {
       code_snippets: {
@@ -53,15 +54,27 @@ type Database = {
         }>;
       };
     };
+    Views: {
+      [_ in never]: never
+    };
+    Functions: {
+      [_ in never]: never
+    };
+    Enums: {
+      [_ in never]: never
+    };
+    CompositeTypes: {
+      [_ in never]: never
+    };
   };
 };
 
 export async function fetchSnippetsByLanguage(language: string): Promise<CodeSnippet[]> {
-  // Use type assertion to tell TypeScript about our table structure
-  const { data, error } = await (supabase
+  // Cast to any to bypass type checking since we know the structure is correct
+  const { data, error } = await supabase
     .from('code_snippets')
     .select('*')
-    .eq('language', language) as any);
+    .eq('language', language) as any;
   
   if (error) {
     console.error("Error fetching snippets:", error);
@@ -72,7 +85,7 @@ export async function fetchSnippetsByLanguage(language: string): Promise<CodeSni
 }
 
 export async function fetchRandomSnippet(language: string, difficulty?: string): Promise<CodeSnippet | null> {
-  // Use type assertion for the query builder
+  // Cast to any to bypass type checking 
   let query = supabase
     .from('code_snippets')
     .select('*')
@@ -108,13 +121,13 @@ export async function saveUserProgress(userId: string, progress: {
   syntax_errors?: number;
   indentation_errors?: number;
 }): Promise<void> {
-  // Use type assertion for the insert operation
-  const { error } = await (supabase
+  // Cast to any to bypass type checking
+  const { error } = await supabase
     .from('user_progress')
     .insert({
       user_id: userId,
       ...progress
-    }) as any);
+    }) as any;
   
   if (error) {
     console.error("Error saving progress:", error);
@@ -123,8 +136,8 @@ export async function saveUserProgress(userId: string, progress: {
 }
 
 export async function getUserProgress(userId: string, limit = 10): Promise<any[]> {
-  // Use type assertion for the query builder
-  const { data, error } = await (supabase
+  // Cast to any to bypass type checking
+  const { data, error } = await supabase
     .from('user_progress')
     .select(`
       *,
@@ -132,7 +145,7 @@ export async function getUserProgress(userId: string, limit = 10): Promise<any[]
     `)
     .eq('user_id', userId)
     .order('completed_at', { ascending: false })
-    .limit(limit) as any);
+    .limit(limit) as any;
   
   if (error) {
     console.error("Error fetching user progress:", error);
