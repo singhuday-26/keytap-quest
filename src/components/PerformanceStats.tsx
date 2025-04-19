@@ -3,7 +3,7 @@ import React from "react";
 import { TypingStats } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, AlertCircle, Clock, Keyboard, Activity } from "lucide-react";
+import { Trophy, AlertCircle, Clock, Keyboard, Activity, Code, Terminal, LayoutGrid } from "lucide-react";
 
 interface PerformanceStatsProps {
   stats: TypingStats | null;
@@ -27,7 +27,7 @@ const PerformanceStats: React.FC<PerformanceStatsProps> = ({
         <CardTitle className="text-lg">Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <StatItem 
             icon={<Activity className="h-4 w-4 text-blue-500" />}
             label="WPM" 
@@ -53,6 +53,30 @@ const PerformanceStats: React.FC<PerformanceStatsProps> = ({
             suffix="s"
           />
         </div>
+        
+        {/* Code-specific metrics */}
+        {stats && stats.specialCharCount !== undefined && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+            <StatItem 
+              icon={<Code className="h-4 w-4 text-primary" />}
+              label="Special Chars" 
+              value={stats.specialCharCount.toString()} 
+              suffix=""
+            />
+            <StatItem 
+              icon={<Terminal className="h-4 w-4 text-primary" />}
+              label="Syntax Errors" 
+              value={stats.syntaxErrorCount !== undefined ? stats.syntaxErrorCount.toString() : "0"} 
+              suffix=""
+            />
+            <StatItem 
+              icon={<LayoutGrid className="h-4 w-4 text-primary" />}
+              label="Indent Errors" 
+              value={stats.indentationErrors !== undefined ? stats.indentationErrors.toString() : "0"} 
+              suffix=""
+            />
+          </div>
+        )}
         
         {isActive && (
           <div className="mt-4">

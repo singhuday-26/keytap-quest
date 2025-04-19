@@ -3,6 +3,7 @@ export type LanguageOption = {
   id: string;
   name: string;
   value: string;
+  category?: string;
 };
 
 export type CodeSnippet = {
@@ -69,4 +70,19 @@ export type LanguageProgress = {
   lastPracticed: Date;
   bestWpm: number;
   commonErrors: string[];
+};
+
+// New types for advanced analytics
+export type SpecialCharStats = {
+  brackets: { correct: number; incorrect: number };
+  semicolons: { correct: number; incorrect: number };
+  parentheses: { correct: number; incorrect: number };
+  indentation: { correct: number; incorrect: number };
+};
+
+export type CodeCategoryStats = {
+  category: string;
+  averageWpm: number;
+  averageAccuracy: number;
+  mostCommonErrors: string[];
 };

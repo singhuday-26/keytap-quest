@@ -28,6 +28,14 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
     totalChars: snippet.code.length,
   });
 
+  // Track special characters for advanced metrics
+  const [specialCharStats, setSpecialCharStats] = useState({
+    brackets: { correct: 0, incorrect: 0 },
+    semicolons: { correct: 0, incorrect: 0 },
+    parentheses: { correct: 0, incorrect: 0 },
+    indentation: { correct: 0, incorrect: 0 },
+  });
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
 
@@ -59,9 +67,65 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
         time: Math.round(timeInSeconds),
         charactersTyped: typingState.totalChars,
         correctCharacters: typingState.correctChars,
+        // Add new code-specific metrics
+        specialCharCount: countSpecialChars(snippet.code),
+        syntaxErrorCount: countSyntaxErrors(),
+        indentationErrors: specialCharStats.indentation.incorrect,
       });
     }
   }, [typingState.completed]);
+
+  // Count the number of special characters in the code
+  const countSpecialChars = (text: string) => {
+    const specialChars = text.match(/[{}[\]()<>:;]/g);
+    return specialChars ? specialChars.length : 0;
+  };
+
+  // Simulate counting syntax errors (in a real implementation, this would use a parser)
+  const countSyntaxErrors = () => {
+    // This is a simplification - a real implementation would use a language parser
+    const totalSpecialCharErrors = 
+      specialCharStats.brackets.incorrect + 
+      specialCharStats.semicolons.incorrect + 
+      specialCharStats.parentheses.incorrect;
+    
+    return totalSpecialCharErrors;
+  };
+
+  // Track special character errors
+  const updateSpecialCharStats = (charIndex: number, isCorrect: boolean) => {
+    const char = snippet.code[charIndex];
+    
+    // Update stats based on character type
+    if (/[{}[\]]/.test(char)) {
+      // Brackets
+      setSpecialCharStats(prev => ({
+        ...prev,
+        brackets: {
+          correct: isCorrect ? prev.brackets.correct + 1 : prev.brackets.correct,
+          incorrect: !isCorrect ? prev.brackets.incorrect + 1 : prev.brackets.incorrect,
+        }
+      }));
+    } else if (char === ';') {
+      // Semicolons
+      setSpecialCharStats(prev => ({
+        ...prev,
+        semicolons: {
+          correct: isCorrect ? prev.semicolons.correct + 1 : prev.semicolons.correct,
+          incorrect: !isCorrect ? prev.semicolons.incorrect + 1 : prev.semicolons.incorrect,
+        }
+      }));
+    } else if (/[()]/.test(char)) {
+      // Parentheses
+      setSpecialCharStats(prev => ({
+        ...prev,
+        parentheses: {
+          correct: isCorrect ? prev.parentheses.correct + 1 : prev.parentheses.correct,
+          incorrect: !isCorrect ? prev.parentheses.incorrect + 1 : prev.parentheses.incorrect,
+        }
+      }));
+    }
+  };
 
   // Handle key press events
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -75,13 +139,37 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
       const end = target.selectionEnd;
       const value = target.value;
       
-      // Replace selection with tab
+      // Replace selection with tab (two spaces)
       setInputValue(value.substring(0, start) + "  " + value.substring(end));
       
       // Set cursor position after the tab
       setTimeout(() => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
+      
+      // Check if tab was used correctly (matching indentation in the original code)
+      const currentLineStart = value.lastIndexOf('\n', start) + 1;
+      const expectedIndent = snippet.code.substring(currentLineStart, start).match(/^\s*/)?.[0] || "";
+      
+      if (expectedIndent.length === 2) {
+        // Tab was used correctly for indentation
+        setSpecialCharStats(prev => ({
+          ...prev,
+          indentation: {
+            correct: prev.indentation.correct + 1,
+            incorrect: prev.indentation.incorrect
+          }
+        }));
+      } else {
+        // Tab was used incorrectly
+        setSpecialCharStats(prev => ({
+          ...prev,
+          indentation: {
+            correct: prev.indentation.correct,
+            incorrect: prev.indentation.incorrect + 1
+          }
+        }));
+      }
       
       return;
     }
@@ -113,10 +201,20 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
     let i = 0;
     
     while (i < currentValue.length && i < snippet.code.length) {
-      if (currentValue[i] === snippet.code[i]) {
+      const isCorrect = currentValue[i] === snippet.code[i];
+      
+      if (isCorrect) {
         correctCount++;
+        // For special characters, update their specific stats
+        if (/[{}[\]()<>:;]/.test(snippet.code[i])) {
+          updateSpecialCharStats(i, true);
+        }
       } else {
         errorCount++;
+        // For special characters, update their specific stats
+        if (/[{}[\]()<>:;]/.test(snippet.code[i])) {
+          updateSpecialCharStats(i, false);
+        }
       }
       i++;
     }
@@ -155,6 +253,12 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
       errors: 0,
       correctChars: 0,
       totalChars: snippet.code.length,
+    });
+    setSpecialCharStats({
+      brackets: { correct: 0, incorrect: 0 },
+      semicolons: { correct: 0, incorrect: 0 },
+      parentheses: { correct: 0, incorrect: 0 },
+      indentation: { correct: 0, incorrect: 0 },
     });
   };
 
