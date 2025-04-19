@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import CodeDisplay from "@/components/CodeDisplay";
 import TypingInterface from "@/components/TypingInterface";
 import PerformanceStats from "@/components/PerformanceStats";
 import ResultsModal from "@/components/ResultsModal";
 import { CodeSnippet, TypingStats } from "@/types";
-import { getSnippetsByLanguage } from "@/data/codeSnippets";
+import { fetchSnippetsByLanguage, fetchRandomSnippet, saveUserProgress } from "@/services/snippetService";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Code } from "lucide-react";
+import { ArrowRight, Code, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -20,24 +23,81 @@ const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [errors, setErrors] = useState(0);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   
-  // Initialize with snippets for the selected language
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Load snippets for the selected language
   useEffect(() => {
-    const snippets = getSnippetsByLanguage(selectedLanguage);
-    if (snippets.length > 0) {
-      setCurrentSnippet(snippets[0]);
-      resetExercise();
-    }
+    loadSnippets();
   }, [selectedLanguage]);
+
+  const loadSnippets = async () => {
+    try {
+      setIsLoading(true);
+      const snippets = await fetchSnippetsByLanguage(selectedLanguage);
+      
+      if (snippets.length > 0) {
+        // Get available difficulties
+        const difficulties = new Set(snippets.map(s => s.difficulty));
+        setAvailableDifficulties(Array.from(difficulties));
+        
+        // Get a random snippet
+        const snippet = await fetchRandomSnippet(selectedLanguage);
+        if (snippet) {
+          setCurrentSnippet(snippet);
+          resetExercise();
+        }
+      } else {
+        // No snippets available for this language
+        setCurrentSnippet(null);
+        toast({
+          title: "No snippets available",
+          description: `No code snippets found for ${selectedLanguage}. Try another language.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error loading snippets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load code snippets. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
   };
 
-  const handleComplete = (stats: TypingStats) => {
+  const handleComplete = async (stats: TypingStats) => {
     setStats(stats);
     setIsTyping(false);
     setResultsOpen(true);
+    
+    // Save progress to Supabase for logged in users
+    if (user && currentSnippet) {
+      try {
+        await saveUserProgress(user.id, {
+          snippet_id: currentSnippet.id,
+          wpm: stats.wpm,
+          accuracy: stats.accuracy,
+          errors: stats.errors,
+          time_taken: stats.time,
+          special_char_errors: stats.specialCharCount,
+          syntax_errors: stats.syntaxErrorCount,
+          indentation_errors: stats.indentationErrors
+        });
+      } catch (error) {
+        console.error("Error saving progress:", error);
+      }
+    }
   };
 
   const handleProgress = (index: number, errorCount: number) => {
@@ -53,20 +113,26 @@ const Index = () => {
     setStats(null);
   };
 
-  // Find available snippet difficulty levels
-  const getAvailableDifficulties = () => {
-    const snippets = getSnippetsByLanguage(selectedLanguage);
-    const difficulties = new Set(snippets.map(s => s.difficulty));
-    return Array.from(difficulties);
-  };
-
   // Select a snippet by difficulty
-  const handleSelectDifficulty = (difficulty: string) => {
-    const snippets = getSnippetsByLanguage(selectedLanguage).filter(s => s.difficulty === difficulty);
-    if (snippets.length > 0) {
-      const randomIndex = Math.floor(Math.random() * snippets.length);
-      setCurrentSnippet(snippets[randomIndex]);
-      resetExercise();
+  const handleSelectDifficulty = async (difficulty: string) => {
+    try {
+      setIsLoading(true);
+      const snippet = await fetchRandomSnippet(selectedLanguage, difficulty);
+      
+      if (snippet) {
+        setCurrentSnippet(snippet);
+        resetExercise();
+      } else {
+        toast({
+          title: "No snippets available",
+          description: `No code snippets found for ${selectedLanguage} with ${difficulty} difficulty.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching snippet:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,19 +145,57 @@ const Index = () => {
       
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto">
-          {!currentSnippet ? (
+          {isLoading ? (
             <Card className="my-8">
               <CardHeader>
                 <CardTitle>Loading Snippets...</CardTitle>
               </CardHeader>
             </Card>
+          ) : !currentSnippet ? (
+            <Card className="my-8">
+              <CardHeader>
+                <CardTitle>No Snippets Available</CardTitle>
+                <CardDescription>
+                  No code snippets found for {selectedLanguage}. Try selecting another language.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           ) : (
             <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Practice Typing</h2>
+                <div className="flex gap-2">
+                  {user && (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/dashboard")}
+                      className="gap-1"
+                    >
+                      <BarChart className="h-4 w-4" />
+                      <span className="hidden sm:inline">Dashboard</span>
+                    </Button>
+                  )}
+                  {!user && (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/auth")}
+                      className="gap-1"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      <span>Sign In</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
               <Tabs defaultValue={currentSnippet.difficulty} className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">Practice Typing</h2>
+                  <div className="flex items-center gap-2">
+                    <Code className="h-5 w-5" />
+                    <span className="font-medium">Difficulty</span>
+                  </div>
                   <TabsList>
-                    {getAvailableDifficulties().map(difficulty => (
+                    {availableDifficulties.map(difficulty => (
                       <TabsTrigger 
                         key={difficulty} 
                         value={difficulty}
@@ -103,7 +207,7 @@ const Index = () => {
                   </TabsList>
                 </div>
                 
-                {getAvailableDifficulties().map(difficulty => (
+                {availableDifficulties.map(difficulty => (
                   <TabsContent key={difficulty} value={difficulty} className="mt-0">
                     <Card className="mb-6">
                       <CardHeader className="pb-2">

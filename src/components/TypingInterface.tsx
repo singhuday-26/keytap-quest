@@ -39,12 +39,19 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
 
+  // Reset the state when snippet changes
+  useEffect(() => {
+    if (snippet) {
+      handleReset();
+    }
+  }, [snippet]);
+
   // Focus the input when the component mounts or when reset
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [typingState.started, typingState.completed]);
+  }, [typingState.started, typingState.completed, snippet]);
 
   // Calculate and return typing stats when completed
   useEffect(() => {
@@ -144,7 +151,9 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
       
       // Set cursor position after the tab
       setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + 2;
+        if (target) {
+          target.selectionStart = target.selectionEnd = start + 2;
+        }
       }, 0);
       
       // Check if tab was used correctly (matching indentation in the original code)
@@ -273,6 +282,12 @@ const TypingInterface: React.FC<TypingInterfaceProps> = ({
           className="font-mono h-40 text-sm leading-relaxed resize-none bg-muted/50"
           placeholder="Start typing to begin the exercise..."
           disabled={typingState.completed}
+          onFocus={(e) => {
+            // Make sure cursor is at the right position
+            if (typingState.currentIndex > 0) {
+              e.target.selectionStart = e.target.selectionEnd = typingState.currentIndex;
+            }
+          }}
         />
         {!typingState.started && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md">
