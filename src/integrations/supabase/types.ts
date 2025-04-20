@@ -18,6 +18,7 @@ export type Database = {
           difficulty: string
           id: string
           language: string
+          source: string | null
         }
         Insert: {
           category?: string | null
@@ -27,6 +28,7 @@ export type Database = {
           difficulty: string
           id?: string
           language: string
+          source?: string | null
         }
         Update: {
           category?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           difficulty?: string
           id?: string
           language?: string
+          source?: string | null
         }
         Relationships: []
       }

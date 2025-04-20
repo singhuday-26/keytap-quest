@@ -8,23 +8,15 @@ import { useToast } from '@/components/ui/use-toast';
 export function useSnippets(initialLanguage: string) {
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
   const [currentSnippet, setCurrentSnippet] = useState<CodeSnippet | null>(null);
-  const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
+  const [availableDifficulties] = useState<string[]>(['easy', 'medium', 'hard']);
   const { toast } = useToast();
 
-  // Fetch snippets for the selected language - cached by react-query
+  // Fetch snippets for the selected language
   const { data: snippets, isLoading, error } = useQuery({
     queryKey: ['snippets', selectedLanguage],
     queryFn: () => fetchSnippetsByLanguage(selectedLanguage),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-
-  // Process available difficulties whenever snippets change
-  useEffect(() => {
-    if (snippets && snippets.length > 0) {
-      const difficulties = new Set(snippets.map(s => s.difficulty));
-      setAvailableDifficulties(Array.from(difficulties));
-    }
-  }, [snippets]);
 
   // Load a random snippet
   const loadRandomSnippet = useCallback(async (difficulty?: string) => {
@@ -36,8 +28,8 @@ export function useSnippets(initialLanguage: string) {
       } else {
         toast({
           title: "No snippets available",
-          description: `No code snippets found for ${selectedLanguage}${difficulty ? ` with ${difficulty} difficulty` : ''}. Try another option.`,
-          variant: "destructive",
+          description: `No code snippets found for ${selectedLanguage}${difficulty ? ` with ${difficulty} difficulty` : ''}. Generating a new one...`,
+          variant: "default",
         });
         return null;
       }

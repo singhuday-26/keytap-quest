@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CodeSnippet } from "@/types";
 
@@ -35,48 +34,39 @@ export async function fetchSnippetsByLanguage(language: string): Promise<CodeSni
 }
 
 export async function fetchRandomSnippet(language: string, difficulty?: string): Promise<CodeSnippet | null> {
-  // Try to use cached data if available
-  const now = Date.now();
-  const cachedData = snippetCache[language];
-  
-  if (cachedData && (now - cachedData.timestamp < CACHE_TTL)) {
-    const filteredSnippets = difficulty 
-      ? cachedData.snippets.filter(s => s.difficulty === difficulty)
-      : cachedData.snippets;
-      
-    if (filteredSnippets.length > 0) {
-      return filteredSnippets[Math.floor(Math.random() * filteredSnippets.length)];
-    }
-  }
-  
-  // If not in cache or filtered cache is empty, fetch from database
-  let query = supabase
-    .from('code_snippets')
-    .select('*')
-    .eq('language', language);
-  
-  if (difficulty) {
-    query = query.eq('difficulty', difficulty);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error("Error fetching random snippet:", error);
-    throw error;
-  }
-  
-  if (data && data.length > 0) {
-    // Update cache with all snippets of this language
-    if (!cachedData) {
-      fetchSnippetsByLanguage(language).catch(console.error); // Update cache in background
+  try {
+    // First try to get an existing random snippet
+    let query = supabase
+      .from('code_snippets')
+      .select('*')
+      .eq('language', language);
+    
+    if (difficulty) {
+      query = query.eq('difficulty', difficulty);
     }
     
-    // Get a random snippet
-    return data[Math.floor(Math.random() * data.length)];
+    let { data: existingSnippets, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (error) throw error;
+    
+    // If we have snippets, return a random one
+    if (existingSnippets && existingSnippets.length > 0) {
+      return existingSnippets[Math.floor(Math.random() * existingSnippets.length)];
+    }
+    
+    // If no snippets found, generate a new one
+    const response = await supabase.functions.invoke('generate-snippet', {
+      body: { language, difficulty },
+    });
+
+    if (response.error) throw response.error;
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching/generating random snippet:", error);
+    return null;
   }
-  
-  return null;
 }
 
 export async function saveUserProgress(userId: string, progress: {
