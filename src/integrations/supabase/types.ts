@@ -9,7 +9,116 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      code_snippets: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          difficulty: string
+          id: string
+          language: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          difficulty: string
+          id?: string
+          language: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string
+          id?: string
+          language?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          font_size: number
+          id: string
+          keyboard_sounds: boolean
+          show_line_numbers: boolean
+          theme: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          font_size?: number
+          id?: string
+          keyboard_sounds?: boolean
+          show_line_numbers?: boolean
+          theme?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          font_size?: number
+          id?: string
+          keyboard_sounds?: boolean
+          show_line_numbers?: boolean
+          theme?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_progress: {
+        Row: {
+          accuracy: number
+          created_at: string | null
+          errors: number
+          id: string
+          indentation_errors: number | null
+          snippet_id: string
+          special_char_errors: number | null
+          syntax_errors: number | null
+          time_taken: number
+          user_id: string
+          wpm: number
+        }
+        Insert: {
+          accuracy: number
+          created_at?: string | null
+          errors: number
+          id?: string
+          indentation_errors?: number | null
+          snippet_id: string
+          special_char_errors?: number | null
+          syntax_errors?: number | null
+          time_taken: number
+          user_id: string
+          wpm: number
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string | null
+          errors?: number
+          id?: string
+          indentation_errors?: number | null
+          snippet_id?: string
+          special_char_errors?: number | null
+          syntax_errors?: number | null
+          time_taken?: number
+          user_id?: string
+          wpm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "code_snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
