@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CodeSnippet } from "@/types";
+import { Database } from "@/lib/supabase";
 
 export async function fetchSnippetsByLanguage(language: string): Promise<CodeSnippet[]> {
   const { data, error } = await supabase

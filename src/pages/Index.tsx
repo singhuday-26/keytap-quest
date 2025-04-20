@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -11,7 +10,7 @@ import { fetchSnippetsByLanguage, fetchRandomSnippet, saveUserProgress } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Code, BarChart } from "lucide-react";
+import { ArrowRight, Code, BarChart, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -30,7 +29,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Load snippets for the selected language
   useEffect(() => {
     loadSnippets();
   }, [selectedLanguage]);
@@ -41,18 +39,15 @@ const Index = () => {
       const snippets = await fetchSnippetsByLanguage(selectedLanguage);
       
       if (snippets.length > 0) {
-        // Get available difficulties
         const difficulties = new Set(snippets.map(s => s.difficulty));
         setAvailableDifficulties(Array.from(difficulties));
         
-        // Get a random snippet
         const snippet = await fetchRandomSnippet(selectedLanguage);
         if (snippet) {
           setCurrentSnippet(snippet);
           resetExercise();
         }
       } else {
-        // No snippets available for this language
         setCurrentSnippet(null);
         toast({
           title: "No snippets available",
@@ -81,7 +76,6 @@ const Index = () => {
     setIsTyping(false);
     setResultsOpen(true);
     
-    // Save progress to Supabase for logged in users
     if (user && currentSnippet) {
       try {
         await saveUserProgress(user.id, {
@@ -113,7 +107,6 @@ const Index = () => {
     setStats(null);
   };
 
-  // Select a snippet by difficulty
   const handleSelectDifficulty = async (difficulty: string) => {
     try {
       setIsLoading(true);
@@ -166,14 +159,24 @@ const Index = () => {
                 <h2 className="text-2xl font-bold">Practice Typing</h2>
                 <div className="flex gap-2">
                   {user && (
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/dashboard")}
-                      className="gap-1"
-                    >
-                      <BarChart className="h-4 w-4" />
-                      <span className="hidden sm:inline">Dashboard</span>
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate("/settings")}
+                        className="gap-1"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Settings</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate("/dashboard")}
+                        className="gap-1"
+                      >
+                        <BarChart className="h-4 w-4" />
+                        <span className="hidden sm:inline">Dashboard</span>
+                      </Button>
+                    </>
                   )}
                   {!user && (
                     <Button

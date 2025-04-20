@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserProgress } from "@/services/snippetService";
 import Header from "@/components/Header";
+import DbSeedingUtil from "@/components/DbSeedingUtil";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Code, Keyboard, Clock, AlertTriangle, BarChart } from "lucide-react";
+import { Trophy, Code, Keyboard, Clock, AlertTriangle, BarChart, Settings } from "lucide-react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart as RechartsBarChart, Bar, Legend
@@ -106,9 +107,24 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Your Progress Dashboard</h1>
-            <Button onClick={() => navigate("/")} variant="outline">
-              Practice Now
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate("/settings")} 
+                variant="outline"
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+              <Button 
+                onClick={() => navigate("/")} 
+                variant="outline"
+                className="gap-2"
+              >
+                <Keyboard className="h-4 w-4" />
+                <span className="hidden sm:inline">Practice</span>
+              </Button>
+            </div>
           </div>
           
           {isLoading ? (
@@ -118,19 +134,23 @@ const Dashboard = () => {
               </CardHeader>
             </Card>
           ) : progressData.length === 0 ? (
-            <Card className="my-8">
-              <CardHeader>
-                <CardTitle>No practice sessions yet</CardTitle>
-                <CardDescription>
-                  Complete some typing exercises to see your progress here!
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => navigate("/")} className="mt-4">
-                  Start Practicing
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-8">
+              <Card className="my-8">
+                <CardHeader>
+                  <CardTitle>No practice sessions yet</CardTitle>
+                  <CardDescription>
+                    Complete some typing exercises to see your progress here!
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate("/")} className="mt-4">
+                    Start Practicing
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <DbSeedingUtil />
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -286,6 +306,10 @@ const Dashboard = () => {
                   </Card>
                 </TabsContent>
               </Tabs>
+              
+              <div className="mt-8">
+                <DbSeedingUtil />
+              </div>
             </>
           )}
         </div>
