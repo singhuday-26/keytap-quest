@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { CodeSnippet, TypingStats, TypingState } from '@/types';
-import { SpecialCharStats, updateSpecialCharStats, countSyntaxErrors } from '@/components/typing/TypingStats';
+import { SpecialCharStats, updateSpecialCharStats, countSyntaxErrors, countSpecialChars } from '@/components/typing/TypingStats';
 
 export function useTypingState(snippet: CodeSnippet, onComplete: (stats: TypingStats) => void, onProgress: (currentIndex: number, errors: number) => void) {
   // Typing state
