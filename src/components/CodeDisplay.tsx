@@ -23,10 +23,13 @@ const CodeDisplay: React.FC<CodeDisplayProps> = ({
   // Split the code into lines for line numbers
   const lines = code.split("\n");
 
+  // Use description as title if title is not available
+  const displayTitle = snippet.title || snippet.description || 'Code Snippet';
+
   return (
     <Card className="w-full mb-4 border border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xl font-mono">{snippet.title}</CardTitle>
+        <CardTitle className="text-xl font-mono">{displayTitle}</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={snippet.difficulty === 'easy' ? 'default' : snippet.difficulty === 'medium' ? 'secondary' : 'destructive'}>
             {snippet.difficulty}

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CodeSnippet } from "@/types";
 
@@ -24,13 +25,19 @@ export async function fetchSnippetsByLanguage(language: string): Promise<CodeSni
     throw error;
   }
   
+  // Transform data to match CodeSnippet type if needed
+  const snippets = data?.map(item => ({
+    ...item,
+    title: item.description || 'Code Snippet', // Use description as title
+  })) || [];
+  
   // Update cache
   snippetCache[language] = {
-    snippets: data || [],
+    snippets: snippets,
     timestamp: now
   };
   
-  return data || [];
+  return snippets;
 }
 
 export async function fetchRandomSnippet(language: string, difficulty?: string): Promise<CodeSnippet | null> {
@@ -53,7 +60,12 @@ export async function fetchRandomSnippet(language: string, difficulty?: string):
     
     // If we have snippets, return a random one
     if (existingSnippets && existingSnippets.length > 0) {
-      return existingSnippets[Math.floor(Math.random() * existingSnippets.length)];
+      const randomSnippet = existingSnippets[Math.floor(Math.random() * existingSnippets.length)];
+      // Add title property if not present
+      return {
+        ...randomSnippet,
+        title: randomSnippet.description || 'Code Snippet'
+      };
     }
     
     // If no snippets found, generate a new one
@@ -61,8 +73,16 @@ export async function fetchRandomSnippet(language: string, difficulty?: string):
       body: { language, difficulty },
     });
 
-    if (response.error) throw response.error;
-    return response.data;
+    if (response.error) {
+      console.error("Error invoking generate-snippet function:", response.error);
+      throw response.error;
+    }
+    
+    // Add title property if not present
+    return {
+      ...response.data,
+      title: response.data.description || 'Generated Code Snippet'
+    };
   } catch (error) {
     console.error("Error fetching/generating random snippet:", error);
     return null;
@@ -97,7 +117,7 @@ export async function getUserProgress(userId: string, limit = 10): Promise<any[]
     .from('user_progress')
     .select(`
       *,
-      code_snippets(title, language, difficulty)
+      code_snippets(id, language, difficulty, description)
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })

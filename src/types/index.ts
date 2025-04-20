@@ -10,13 +10,15 @@ export type CodeSnippet = {
   id: string;
   code: string;
   language: string;
-  title: string;
+  title?: string;
+  description?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   source?: string;
   // Adding new fields for categorization
   category?: 'algorithms' | 'data-structures' | 'design-patterns' | 'frameworks' | 'interview';
   concepts?: string[];
   author?: string;
+  created_at?: string;
 };
 
 export type TypingStats = {

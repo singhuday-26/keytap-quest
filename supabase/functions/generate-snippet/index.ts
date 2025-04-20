@@ -20,7 +20,7 @@ serve(async (req) => {
     // Generate code snippet using OpenAI
     const prompt = `Generate a ${difficulty} difficulty coding example in ${language}. 
                    The code should be practical, well-commented, and demonstrate good practices. 
-                   Keep it under 15 lines. Include a brief title that describes what the code does.`;
+                   Keep it under 15 lines. Include a brief description that explains what the code does.`;
 
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -40,9 +40,25 @@ serve(async (req) => {
     const data = await openAIResponse.json();
     const generatedCode = data.choices[0].message.content;
     
-    // Extract title and code from the generated content
-    const [title, ...codeLines] = generatedCode.split('\n');
-    const code = codeLines.join('\n');
+    console.log("Generated code:", generatedCode);
+    
+    // Extract description and code from the generated content
+    let description = "";
+    let code = "";
+    
+    const lines = generatedCode.split('\n');
+    if (lines.length > 0) {
+      // First line or paragraph is likely the description
+      const firstNonEmptyIndex = lines.findIndex(line => line.trim() !== '');
+      if (firstNonEmptyIndex >= 0) {
+        description = lines[firstNonEmptyIndex].replace('#', '').trim();
+        code = lines.slice(firstNonEmptyIndex + 1).join('\n').trim();
+      } else {
+        code = generatedCode;
+      }
+    } else {
+      code = generatedCode;
+    }
 
     // Store in database
     const supabaseClient = createClient(
@@ -54,17 +70,20 @@ serve(async (req) => {
       .from('code_snippets')
       .insert([
         {
-          title: title.replace('#', '').trim(),
-          code,
           language,
+          code,
           difficulty,
+          description,
           source: 'openai'
         }
       ])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error inserting snippet:", error);
+      throw error;
+    }
 
     return new Response(JSON.stringify(snippet), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

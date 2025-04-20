@@ -27,11 +27,10 @@ export async function seedSnippets(): Promise<{ count: number; error: string | n
     const snippetsToInsert = codeSnippets.map(snippet => ({
       id: snippet.id,
       language: snippet.language,
-      title: snippet.title,
       code: snippet.code,
       difficulty: snippet.difficulty,
       category: snippet.category || null,
-      description: snippet.title // Using title as description for now
+      description: snippet.title // Using title as description
     }));
     
     // Insert snippets into the database
@@ -40,6 +39,7 @@ export async function seedSnippets(): Promise<{ count: number; error: string | n
       .insert(snippetsToInsert);
     
     if (error) {
+      console.error("Error seeding database:", error);
       throw error;
     }
     

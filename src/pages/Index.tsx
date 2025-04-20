@@ -47,7 +47,10 @@ const Index = () => {
         const result = await seedSnippets();
         setSeedingComplete(true);
         if (result.count > 0) {
-          loadRandomSnippet();
+          await loadRandomSnippet(); // Load a snippet after seeding
+        } else {
+          // If no snippets in database, force generate one
+          await loadRandomSnippet();
         }
       } catch (error) {
         console.error("Error seeding database:", error);
@@ -56,6 +59,9 @@ const Index = () => {
           description: "Failed to initialize code snippets. Please try again.",
           variant: "destructive",
         });
+        
+        // Even if seeding fails, try to load or generate a snippet
+        await loadRandomSnippet();
       }
     };
 
@@ -135,7 +141,7 @@ const Index = () => {
     );
   }
 
-  // Render no snippets state
+  // Render no snippets state with a reload button
   if (!currentSnippet) {
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -149,9 +155,14 @@ const Index = () => {
               <CardHeader>
                 <CardTitle>No Snippets Available</CardTitle>
                 <CardDescription>
-                  No code snippets found for {selectedLanguage}. Try selecting another language.
+                  No code snippets found for {selectedLanguage}. Try selecting another language or generate a new snippet.
                 </CardDescription>
               </CardHeader>
+              <CardContent className="flex justify-end">
+                <Button onClick={() => loadRandomSnippet()}>
+                  Generate New Snippet
+                </Button>
+              </CardContent>
             </Card>
           </div>
         </main>
@@ -205,7 +216,7 @@ const Index = () => {
             </div>
           </div>
           
-          <Tabs defaultValue={currentSnippet.difficulty} className="mb-6">
+          <Tabs defaultValue={currentSnippet.difficulty || "easy"} className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Code className="h-5 w-5" />
@@ -259,6 +270,17 @@ const Index = () => {
             onComplete={handleComplete}
             onProgress={handleProgress}
           />
+          
+          <div className="flex justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => loadRandomSnippet(currentSnippet.difficulty)}
+              className="gap-2"
+            >
+              <Code className="h-4 w-4" />
+              New Snippet
+            </Button>
+          </div>
           
           <ResultsModal 
             isOpen={resultsOpen}

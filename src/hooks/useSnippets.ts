@@ -23,6 +23,13 @@ export function useSnippets(initialLanguage: string) {
     try {
       const snippet = await fetchRandomSnippet(selectedLanguage, difficulty);
       if (snippet) {
+        // Make sure the snippet has a title property
+        if (!snippet.title && snippet.description) {
+          snippet.title = snippet.description;
+        } else if (!snippet.title) {
+          snippet.title = 'Code Snippet';
+        }
+        
         setCurrentSnippet(snippet);
         return snippet;
       } else {
@@ -47,6 +54,7 @@ export function useSnippets(initialLanguage: string) {
   // Change the selected language
   const changeLanguage = useCallback((language: string) => {
     setSelectedLanguage(language);
+    setCurrentSnippet(null); // Reset current snippet when language changes
   }, []);
 
   return {
