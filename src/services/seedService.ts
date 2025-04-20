@@ -3,20 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { codeSnippets } from "@/data/codeSnippets";
 import { CodeSnippet } from "@/types";
 
+// Cache the result to avoid redundant checks
+let seedCheckPerformed = false;
+let snippetCount = 0;
+
 export async function seedSnippets(): Promise<{ count: number; error: string | null }> {
   try {
     // First, check if we already have snippets in the database
-    const { count, error: countError } = await supabase
-      .from('code_snippets')
-      .select('*', { count: 'exact', head: true });
-    
-    if (countError) {
-      throw countError;
-    }
-    
-    // If we already have snippets, return early
-    if (count && count > 0) {
-      return { count, error: null };
+    if (!seedCheckPerformed) {
+      const count = await checkSnippetCount();
+      snippetCount = count;
+      seedCheckPerformed = true;
+      
+      // If we already have snippets, return early
+      if (count > 0) {
+        return { count, error: null };
+      }
+    } else if (snippetCount > 0) {
+      return { count: snippetCount, error: null };
     }
     
     // Prepare snippets for insertion
@@ -39,7 +43,8 @@ export async function seedSnippets(): Promise<{ count: number; error: string | n
       throw error;
     }
     
-    return { count: snippetsToInsert.length, error: null };
+    snippetCount = snippetsToInsert.length;
+    return { count: snippetCount, error: null };
   } catch (error) {
     console.error("Error seeding snippets:", error);
     return { count: 0, error: error.message };
@@ -47,6 +52,10 @@ export async function seedSnippets(): Promise<{ count: number; error: string | n
 }
 
 export async function checkSnippetCount(): Promise<number> {
+  if (seedCheckPerformed) {
+    return snippetCount;
+  }
+  
   try {
     const { count, error } = await supabase
       .from('code_snippets')
@@ -56,7 +65,9 @@ export async function checkSnippetCount(): Promise<number> {
       throw error;
     }
     
-    return count || 0;
+    snippetCount = count || 0;
+    seedCheckPerformed = true;
+    return snippetCount;
   } catch (error) {
     console.error("Error checking snippet count:", error);
     return 0;

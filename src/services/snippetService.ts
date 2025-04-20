@@ -1,9 +1,20 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CodeSnippet } from "@/types";
-import { Database } from "@/lib/supabase";
+
+// Cache for language snippets to reduce database calls
+const snippetCache: Record<string, { snippets: CodeSnippet[], timestamp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function fetchSnippetsByLanguage(language: string): Promise<CodeSnippet[]> {
+  // Check cache first
+  const now = Date.now();
+  const cachedData = snippetCache[language];
+  
+  if (cachedData && (now - cachedData.timestamp < CACHE_TTL)) {
+    return cachedData.snippets;
+  }
+  
   const { data, error } = await supabase
     .from('code_snippets')
     .select('*')
@@ -14,10 +25,31 @@ export async function fetchSnippetsByLanguage(language: string): Promise<CodeSni
     throw error;
   }
   
+  // Update cache
+  snippetCache[language] = {
+    snippets: data || [],
+    timestamp: now
+  };
+  
   return data || [];
 }
 
 export async function fetchRandomSnippet(language: string, difficulty?: string): Promise<CodeSnippet | null> {
+  // Try to use cached data if available
+  const now = Date.now();
+  const cachedData = snippetCache[language];
+  
+  if (cachedData && (now - cachedData.timestamp < CACHE_TTL)) {
+    const filteredSnippets = difficulty 
+      ? cachedData.snippets.filter(s => s.difficulty === difficulty)
+      : cachedData.snippets;
+      
+    if (filteredSnippets.length > 0) {
+      return filteredSnippets[Math.floor(Math.random() * filteredSnippets.length)];
+    }
+  }
+  
+  // If not in cache or filtered cache is empty, fetch from database
   let query = supabase
     .from('code_snippets')
     .select('*')
@@ -35,9 +67,13 @@ export async function fetchRandomSnippet(language: string, difficulty?: string):
   }
   
   if (data && data.length > 0) {
+    // Update cache with all snippets of this language
+    if (!cachedData) {
+      fetchSnippetsByLanguage(language).catch(console.error); // Update cache in background
+    }
+    
     // Get a random snippet
-    const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex];
+    return data[Math.floor(Math.random() * data.length)];
   }
   
   return null;
@@ -71,7 +107,7 @@ export async function getUserProgress(userId: string, limit = 10): Promise<any[]
     .from('user_progress')
     .select(`
       *,
-      code_snippets:snippet_id(title, language, difficulty)
+      code_snippets(title, language, difficulty)
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
